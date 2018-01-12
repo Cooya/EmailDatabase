@@ -2,7 +2,7 @@ const mongo = require('mongodb');
 const xlsx2json = require('xlsx-to-json');
 
 const cleaner = require('./cleaner.js');
-//const combinator = require('./ecombinator.js');
+//const permutator = require('./epermetutator.js');
 //const tester = require('etester.js');
 
 const db;

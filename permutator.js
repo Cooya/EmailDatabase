@@ -103,7 +103,7 @@ const generate = function(names, domainName) {
 
 	console.log(array.length + '/' + permutations.length + ' permutations.');
 	return array;
-}
+};
 
-console.log(generate(readArgs(), 'email.com'));
-//module.exports = {generate: generate};
+//console.log(generate(readArgs(), 'email.com'));
+module.exports = {generate: generate};

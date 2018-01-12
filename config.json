@@ -1,0 +1,5 @@
+{
+    "dbUrl": "mongodb://localhost:27017/db",
+    "collectionName": "email.entries",
+    "nbThreads": 10
+}

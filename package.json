@@ -1,0 +1,27 @@
+{
+  "name": "email-database",
+  "version": "0.0.1",
+  "description": "Email checker for build valid email database",
+  "main": "index.js",
+  "dependencies": {
+    "es6-promise-pool": "^2.5.0",
+    "mongodb": "2.2.34",
+    "neverbounce": "3.0.0",
+    "xlsx-json": "^0.1.0",
+    "xlsx-to-json": "^0.3.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://Cooya@github.com/Cooya/EmailDatabase.git"
+  },
+  "author": "Cooya",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Cooya/EmailDatabase/issues"
+  },
+  "homepage": "https://github.com/Cooya/EmailDatabase#readme"
+}

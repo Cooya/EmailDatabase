@@ -11,15 +11,15 @@ String.prototype.removeAccents = function() {
 	const noaccent = ['A','a','E','e','I','i','O','o','U','u','N','n','C','c'];
 	 
 	let str = this;
-	for(var i = 0; i < accents.length; ++i)
+	for(let i = 0; i < accents.length; ++i)
 		str = str.replace(accents[i], noaccent[i]);
 	 
 	return str;
-}
+};
 
 const cleanName = function(name) {
 	// ignore name if pattern is present
-	if(name.indexOf('Member') != -1)
+	if(name.indexOf('Member') !== -1)
 		return null;
 
 	// replace accents by associated letters
@@ -37,8 +37,11 @@ const cleanName = function(name) {
 	// remove blanks at the beginning and the end of the string
 	name = name.trim();
 
+    // convert upper case letters to lower case letters
+    name = name.toLowerCase();
+
 	// separate multiple names
-	const names = name.split(' ');
+	/*const names = name.split(' ');
 	const result = {};
 	result.initialName = name;
 	if(names.length > 1) {
@@ -48,10 +51,10 @@ const cleanName = function(name) {
 	if(names.length > 2)
 		result.third = names[2];
 	if(names.length > 3)
-		result.fourth = names[3];
+		result.fourth = names[3];*/
 
-	return result;
-}
+	return name;
+};
 
 
 module.exports = {

@@ -11,9 +11,9 @@ function setConfig() {
 
 	for(let i = 2; i < process.argv.length; ++i) {
 		if(process.argv[i] === '--xlsx-file')
-			config.xlsxFile = process.argv[i + 1];
+			config['xlsxFile'] = process.argv[i + 1];
 		else if(process.argv[i] === '--export-file')
-			config.exportFile = process.argv[i + 1];
+			config['exportFile'] = process.argv[i + 1];
 	}
 
 	return config;
@@ -23,7 +23,7 @@ async function selectCollection(dbUrl, collectionName) {
 	const db = await mongo.connect(dbUrl);
 	const collection = await db.collection(collectionName);
 	console.log('Collection "' + collectionName + '" selected.');
-	return {db, collection};
+	return collection
 }
 
 function readEntriesFromXLSXFile(xlsxFile) {
@@ -60,7 +60,7 @@ async function updateEntryIntoDatabase(collection, entry) {
 
 (async function main() {
 	const config = setConfig();
-	const {db, collection} = await selectCollection(config.dbUrl, config.collectionName);
+	const collection = await selectCollection(config['dbUrl'], config.collectionName);
 
 	//if(config.exportFile)
 		//exportDatabase(config.exportFile):
@@ -121,7 +121,7 @@ async function updateEntryIntoDatabase(collection, entry) {
 			return null;
 	};
 
-    const endPromise = new PromisePool(promiseProducer, config.nbThreads).start();
+    const endPromise = new PromisePool(promiseProducer, config['nbThreads']).start();
 
     endPromise.then(() => {
         console.log(entries.length + ' entries processed.');

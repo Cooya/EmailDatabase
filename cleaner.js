@@ -41,19 +41,7 @@ const cleanName = function(name) {
     name = name.toLowerCase();
 
 	// separate multiple names
-	/*const names = name.split(' ');
-	const result = {};
-	result.initialName = name;
-	if(names.length > 1) {
-		result.first = names[0];
-		result.second = names[1];
-	}
-	if(names.length > 2)
-		result.third = names[2];
-	if(names.length > 3)
-		result.fourth = names[3];*/
-
-	return name;
+	return name.split(' ');
 };
 
 

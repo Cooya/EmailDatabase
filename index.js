@@ -7,7 +7,7 @@ const xlsx2json = require('xlsx-to-json');
 const cleaner = require('./cleaner.js');
 const IziMongo = require('./izimongo.js');
 const permutator = require('./permutator.js');
-const checker = require('./checker.js');
+const checker = require('./checker.js')('emailtester');
 
 function setConfig() {
 	const config = require('./config.json');
@@ -73,7 +73,7 @@ function readEntriesFromXLSXFile(xlsxFile) {
 				processed: false
 			};
 			//console.log(entry);
-			entriesCollection.insert(entry);
+			await entriesCollection.insert(entry);
 		}
 		console.log('Entries from file have been written into database.');
 	}
@@ -100,29 +100,34 @@ function readEntriesFromXLSXFile(xlsxFile) {
 				}
 
 				// email generating
-				if(!entry.emailPossibilities) {
-					entry.emailPossibilities = permutator.generate(entry.names, entry.domain);
+				if(!entry.emailPossibilities && entry.domain != '#N/A') {
+					entry.emailPossibilities = {};
+					permutator.generate(entry.names, entry.domain).forEach((possibility) => {
+						entry.emailPossibilities[possibility.replace(/\./g, '_dot_')] = null;
+					});
 					await entriesCollection.update(entry);
 					//console.log('Email possibilities : ' + entry.emailPossibilities + '.');
 				}
 
 				// email testing
-				if(!entry.testedEmails)
-					entry.testedEmails = {};
-				for(let emailPossibility of entry.emailPossibilities) {
-					if(!entry.testedEmails[emailPossibility]) {
-						try {
-						   entry.testedEmails[emailPossibility] = await checker.checkEmail(emailPossibility);
-						}
-						catch(e) {
-							return reject(e.message);
-						}
+				if(entry.emailPossibilities) {
+					let email;
+					for(let possibility of Object.keys(entry.emailPossibilities)) {
+						if(!entry.emailPossibilities[possibility]) {
+							email = possibility.replace(/_dot_/g, '.');
+							try {
+							   entry.emailPossibilities[possibility] = await checker.checkEmail(email);
+							}
+							catch(e) {
+								return reject(e.message);
+							}
 
-						await entriesCollection.update(entry);
-						console.log(emailPossibility + ' : ' + entry.testedEmails[emailPossibility]);
-						if(entry.testedEmails[emailPossibility] === 'VALID')
-							break;
-						sleep(5000);
+							await entriesCollection.update(entry);
+							console.log(email + ' : ' + entry.emailPossibilities[possibility]);
+							if(entry.emailPossibilities[possibility] === 'VALID')
+								break;
+							sleep(5000);
+						}
 					}
 				}
 

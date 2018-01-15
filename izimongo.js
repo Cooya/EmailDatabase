@@ -67,7 +67,7 @@ module.exports = class IziMongo {
 	update(obj) {
 		return this.collection.updateOne({id: obj.id}, obj)
 		.then((result) => {
-			if(result.modifiedCount == 1) {
+			if(result.modifiedCount === 1) {
 				this.container[obj.id] = obj;
 				console.log('Entry has been set into database.');
 				return true;
@@ -84,4 +84,4 @@ module.exports = class IziMongo {
 			console.log('Collection "' + this.collectionName + '"has been emptied.');
 		});
 	}
-}
+};

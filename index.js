@@ -22,7 +22,7 @@ function setConfig() {
 		else if(process.argv[i] === '--prod')
 			config['prodMode'] = true;
 		else if(process.argv[i] === '--reset')
-			consig['resetMode'] = true;
+			config['resetMode'] = true;
 	}
 
 	return config;
@@ -45,8 +45,8 @@ function readEntriesFromXLSXFile(xlsxFile) {
 	const config = setConfig();
 	const entriesCollection = new IziMongo(config['dbUrl'], config['entriesCollectionName']);
 	await entriesCollection.connect();
-	const domainsCollection = new IziMongo(config['dbUrl'], config['domainsCollectionName']);
-	await domainsCollection.connect();
+	//const domainsCollection = new IziMongo(config['dbUrl'], config['domainsCollectionName']);
+	//await domainsCollection.connect();
 
 	if(config.prodMode)
 		console.log('Production mode enabled.');
@@ -100,7 +100,7 @@ function readEntriesFromXLSXFile(xlsxFile) {
 				}
 
 				// email generating
-				if(!entry.emailPossibilities && entry.domain != '#N/A') {
+				if(!entry.emailPossibilities && entry.domain !== '#N/A') {
 					entry.emailPossibilities = {};
 					permutator.generate(entry.names, entry.domain).forEach((possibility) => {
 						entry.emailPossibilities[possibility.replace(/\./g, '_dot_')] = null;

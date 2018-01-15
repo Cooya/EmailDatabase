@@ -1,6 +1,0 @@
-{
-    "dbUrl": "mongodb://nico:coya@localhost:27017/db",
-    "entriesCollectionName": "email.entries",
-    "domainsCollectionName": "email.domains",
-    "nbThreads": 1
-}

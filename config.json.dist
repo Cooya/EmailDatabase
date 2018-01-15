@@ -1,0 +1,8 @@
+{
+    "dbUrl": "",
+    "entriesCollectionName": "email.entries",
+    "domainsCollectionName": "email.domains",
+    "apiKey": "OCnYXaf8",
+    "apiSecret": "eJOr8PxXDZgwtp3",
+    "nbThreads": 3
+}

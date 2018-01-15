@@ -1,8 +1,9 @@
 const cheerio = require('cheerio');
 const request = require('request');
+const config = require('./config.json');
 const NeverBounce = require('neverbounce')({
-	apiKey: 'FUINJ6gC',
-	apiSecret: 'n4R1pg8oAwC3KNE'
+	apiKey: config['apiKey'],
+	apiSecret: config['apiSecret']
 });
 
 const STATUS = [
@@ -52,27 +53,27 @@ const checkEmailWithEmailTester = function(email) {
 
 			const message = rows.last().text().trim();
 			console.log(message);
-			if(message.indexOf('E-mail address is valid') != -1)
+			if(message.indexOf('E-mail address is valid') !== -1)
 				resolve(STATUS[0]);
-			else if(message.indexOf('E-mail address does not exist on this server') != -1)
+			else if(message.indexOf('E-mail address does not exist on this server') !== -1)
 				resolve(STATUS[1]);
-			else if(message.indexOf('Server doesn\'t allow e-mail address verification') != -1)
+			else if(message.indexOf('Server doesn\'t allow e-mail address verification') !== -1)
 				resolve(STATUS[4]);
-			else if(message.indexOf('Unknown response from mail server') != -1)
+			else if(message.indexOf('Unknown response from mail server') !== -1)
 				resolve(STATUS[4]);
 			else
 				resolve('Unknown received message...');
 		});
 	});
-}
+};
 
 module.exports = function(checker) {
-	if(checker == 'neverbounce')
+	if(checker === 'neverbounce')
 		return {checkEmail: checkEmailWithNeverBounce};
-	else if(checker == 'emailtester')
+	else if(checker === 'emailtester')
 		return {checkEmail: checkEmailWithEmailTester};
 	else {
-		console.error('Invalid provided email checker.')
+		console.error('Invalid provided email checker.');
 		return null;
 	}
 };

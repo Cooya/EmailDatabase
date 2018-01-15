@@ -56,7 +56,29 @@ const permutations = [
 	'{fi}.{ln2}',
 	'{fn}{li2}',
 	'{fi}{li2}',
-	'{fi}.{li2}'
+	'{fi}.{li2}',
+	'{fn}.{ln}{ln2}{ln3}',
+	'{fn}.{ln}-{ln2}-{ln3}',
+	'{fi}.{ln}-{ln2}-{ln3}',
+	'{fi}.{ln}{ln2}{ln3}',
+	'{fn}{ln3}',
+	'{fn}.{ln3}',
+	'{fi}{ln3}',
+	'{fi}.{ln3}',
+	'{fn}{ln3}',
+	'{fi}{ln3}',
+	'{fi}.{ln3}',
+	'{fn}.{ln}{ln2}{ln3}{ln4}',
+	'{fn}.{ln}-{ln2}-{ln3}-{ln4}',
+	'{fi}.{ln}-{ln2}-{ln3}-{ln4}',
+	'{fi}.{ln}{ln2}{ln3}{ln4}',
+	'{fn}{ln4}',
+	'{fn}.{ln4}',
+	'{fi}{ln4}',
+	'{fi}.{ln4}',
+	'{fn}{ln4}',
+	'{fi}{ln4}',
+	'{fi}.{ln4}'
 ];
 
 function replacePatterns(permutation, names) {
@@ -77,7 +99,7 @@ function replacePatterns(permutation, names) {
 		permutation = permutation.replace('{li' + i + '}', names[i][0]);
 	}
 
-	if(permutation.match(/\{[a-z]{2}[0-9]?\}/))
+	if(permutation.match(/{[a-z]{2}[0-9]?}/))
 		return null;
 
 	return permutation;

@@ -59,7 +59,7 @@ module.exports = class IziMongo {
 		return this.collection.updateOne({id: obj.id}, obj, {upsert: true})
 		.then(() => {
 			this.container[obj.id] = obj;
-			console.log('Entry has been set into database.');
+			//console.log('Entry has been updated into database.');
 			return true;
 		});
 	}
@@ -69,7 +69,7 @@ module.exports = class IziMongo {
 		.then((result) => {
 			if(result.modifiedCount === 1) {
 				this.container[obj.id] = obj;
-				console.log('Entry has been set into database.');
+				//console.log('Entry has been set into database.');
 				return true;
 			}
 			else
@@ -81,7 +81,7 @@ module.exports = class IziMongo {
 		return this.collection.drop()
 		.then(() => {
 			this.container = {};
-			console.log('Collection "' + this.collectionName + '"has been emptied.');
+			console.log('Collection "' + this.collectionName + '" has been emptied.');
 		});
 	}
 };

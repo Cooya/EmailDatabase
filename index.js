@@ -7,7 +7,7 @@ const xlsx2json = require('xlsx-to-json');
 const cleaner = require('./cleaner.js');
 const IziMongo = require('./izimongo.js');
 const permutator = require('./permutator.js');
-const checker = require('./checker.js')('emailtester');
+const checker = require('./checker.js')('neverbounce');
 
 function setConfig() {
 	const config = require('./config.json');
@@ -41,6 +41,12 @@ function readEntriesFromXLSXFile(xlsxFile) {
 	});
 }
 
+function markOtherEntriesAsSkipped(obj) {
+	for(let key in obj)
+		if(obj.hasOwnProperty(key) && !obj[key])
+			obj[key] = 'SKIPPED';
+}
+
 (async function main() {
 	const config = setConfig();
 	const entriesCollection = new IziMongo(config['dbUrl'], config['entriesCollectionName']);
@@ -52,7 +58,7 @@ function readEntriesFromXLSXFile(xlsxFile) {
 		console.log('Production mode enabled.');
 	else if(config.resetMode) {
 		console.log('Reset mode enabled.');
-		await entriesCollection.drop();
+		await entriesCollection.empty();
 		process.exit(0);
 	}
 	else if(config.exportFile) {
@@ -116,17 +122,22 @@ function readEntriesFromXLSXFile(xlsxFile) {
 						if(!entry.emailPossibilities[possibility]) {
 							email = possibility.replace(/_dot_/g, '.');
 							try {
-							   entry.emailPossibilities[possibility] = await checker.checkEmail(email);
+							   	entry.emailPossibilities[possibility] = await checker.checkEmail(email);
+								await entriesCollection.update(entry);
+								console.log(email + ' : ' + entry.emailPossibilities[possibility]);
 							}
 							catch(e) {
 								return reject(e.message);
 							}
 
-							await entriesCollection.update(entry);
-							console.log(email + ' : ' + entry.emailPossibilities[possibility]);
-							if(entry.emailPossibilities[possibility] === 'VALID')
+							// if any valid email has been found, we mark other possibilities and we stop to process this address
+							if(entry.emailPossibilities[possibility] === 'VALID') {
+								markOtherEntriesAsSkipped(entry.emailPossibilities);
+								await entriesCollection.update(entry);
 								break;
-							sleep(5000);
+							}
+
+							sleep(config.sleepTime); // for avoid stressing API
 						}
 					}
 				}

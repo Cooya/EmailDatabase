@@ -19,8 +19,6 @@ function setConfig() {
 			config['exportFile'] = process.argv[i + 1];
 		else if(process.argv[i] === '--threads')
 			config['nbThreads'] = process.argv[i + 1];
-		else if(process.argv[i] === '--prod')
-			config['prodMode'] = true;
 		else if(process.argv[i] === '--reset')
 			config['resetMode'] = true;
 	}
@@ -54,9 +52,7 @@ function markOtherEntriesAsSkipped(obj) {
 	//const domainsCollection = new IziMongo(config['dbUrl'], config['domainsCollectionName']);
 	//await domainsCollection.connect();
 
-	if(config.prodMode)
-		console.log('Production mode enabled.');
-	else if(config.resetMode) {
+	if(config.resetMode) {
 		console.log('Reset mode enabled.');
 		await entriesCollection.empty();
 		process.exit(0);
@@ -142,10 +138,9 @@ function markOtherEntriesAsSkipped(obj) {
 					}
 				}
 
-				if(config['prodMode']) {
-					entry.processed = true;
-					await entriesCollection.update(entry);
-				}
+				// save the email address as processed into database to avoid to process it again
+				entry.processed = true;
+				await entriesCollection.update(entry);
 				resolve();
 			});
 		else

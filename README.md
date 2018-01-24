@@ -34,6 +34,11 @@ Export the database to a JSON file :
 node index.js --export-file output.json
 ```
 
+Export the database to a JSON file with valid emails only :
+```bash
+node index.js --export-file output.json --valid-only
+```
+
 Empty the email addresses collection :
 ```bash
 node index.js --reset

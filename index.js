@@ -21,6 +21,8 @@ function setConfig() {
 			config['nbThreads'] = process.argv[i + 1];
 		else if(process.argv[i] === '--reset')
 			config['resetMode'] = true;
+		else if(process.argv[i] === '--valid-only')
+			config['validOnly'] = true;
 	}
 
 	return config;
@@ -45,6 +47,34 @@ function markOtherEntriesAsSkipped(obj) {
 			obj[key] = 'SKIPPED';
 }
 
+function normalizeJSON(json, validOnly) {
+	if(validOnly) {
+        for(let entry of json) {
+            for(let email in entry['emailPossibilities']) {
+                if(entry['emailPossibilities'][email] === 'VALID') {
+                    entry['validEmail'] = email.replace(/_dot_/g, '.');
+                    break;
+                }
+            }
+
+            if(!entry['validEmail'])
+                entry['validEmail'] = 'none';
+            delete entry['emailPossibilities'];
+        }
+	}
+	else {
+		let tmp;
+        for(let entry of json) {
+            tmp = Object.assign({}, entry['emailPossibilities']);
+            entry['emailPossibilities'] = {};
+            for(let email in tmp)
+                entry['emailPossibilities'][email.replace(/_dot_/g, '.')] = tmp[email];
+        }
+    }
+
+    return json;
+}
+
 (async function main() {
 	const config = setConfig();
 	const entriesCollection = new IziMongo(config['dbUrl'], config['entriesCollectionName']);
@@ -59,7 +89,8 @@ function markOtherEntriesAsSkipped(obj) {
 	}
 	else if(config.exportFile) {
 		console.log('Export mode enabled.');
-		fs.writeFileSync(config.exportFile, JSON.stringify(await entriesCollection.all(), null, 4));
+		const json = normalizeJSON(await entriesCollection.all(), config.validOnly);
+		fs.writeFileSync(config.exportFile, JSON.stringify(json, null, 4));
 		console.log('The collection has been exported into the file "' + config.exportFile + '".');
 		process.exit(0);
 	}

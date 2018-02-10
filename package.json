@@ -1,6 +1,6 @@
 {
   "name": "email-database",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "Email checker for build valid email database",
   "main": "index.js",
   "dependencies": {

@@ -48,39 +48,63 @@ function markOtherEntriesAsSkipped(obj) {
 }
 
 function normalizeJSON(json, validOnly) {
-	if(validOnly) {
-        for(let entry of json) {
-            for(let email in entry['emailPossibilities']) {
-                if(entry['emailPossibilities'][email] === 'VALID') {
-                    entry['validEmail'] = email.replace(/_dot_/g, '.');
-                    break;
-                }
-            }
-
-            if(!entry['validEmail'])
-                entry['validEmail'] = 'none';
-            delete entry['emailPossibilities'];
-        }
+	let tmp;
+	for(let entry of json) {
+		tmp = Object.assign({}, entry['emailPossibilities']);
+		entry['emailPossibilities'] = {};
+		Object.keys(tmp).forEach((email, index) => {
+			if(!validOnly || (validOnly && tmp[email] == 'VALID')) {
+				delete entry['_id'];
+				entry['emailPossibilities'][email.replace(/_dot_/g, '.')] = {
+					result: tmp[email],
+					patterns: permutator.exportPermutation(index, entry.names) 
+				};
+			}
+		})
 	}
-	else {
-		let tmp;
-        for(let entry of json) {
-            tmp = Object.assign({}, entry['emailPossibilities']);
-            entry['emailPossibilities'] = {};
-            for(let email in tmp)
-                entry['emailPossibilities'][email.replace(/_dot_/g, '.')] = tmp[email];
-        }
-    }
 
-    return json;
+	return json;
 }
 
-(async function main() {
+async function checkEmailPossibility(entry, possibility, possibilityIndex, entriesCollection, domainsCollection) {
+	const email = possibility.replace(/_dot_/g, '.');
+	try {
+		entry.emailPossibilities[possibility] = await checker.checkEmail(email);
+		await entriesCollection.update(entry);
+		console.log(email + ' : ' + entry.emailPossibilities[possibility]);
+	}
+	catch(e) {
+		return {error: e.message};
+	}
+		
+	// if any valid email has been found, we mark other possibilities and we stop to process this address
+	if(entry.emailPossibilities[possibility] === 'VALID') {
+		markOtherEntriesAsSkipped(entry.emailPossibilities);
+		const domainEntry = await domainsCollection.get(entry.domain);
+		if(domainEntry) {
+			if(domainEntry.indexes.indexOf(possibilityIndex) == -1) {
+				domainEntry.indexes.push(possibilityIndex);
+				await domainsCollection.update(domainEntry);
+			}
+		}
+		else {
+			await domainsCollection.insert({
+				id: entry.domain,
+				indexes: [possibilityIndex]
+			});
+		}
+		await entriesCollection.update(entry);
+		return {valid: true};
+	}
+	return {};
+}
+
+async function main() {
 	const config = setConfig();
 	const entriesCollection = new IziMongo(config['dbUrl'], config['entriesCollectionName']);
 	await entriesCollection.connect();
-	//const domainsCollection = new IziMongo(config['dbUrl'], config['domainsCollectionName']);
-	//await domainsCollection.connect();
+	const domainsCollection = new IziMongo(config['dbUrl'], config['domainsCollectionName']);
+	await domainsCollection.connect();
 
 	if(config.resetMode) {
 		console.log('Reset mode enabled.');
@@ -144,27 +168,44 @@ function normalizeJSON(json, validOnly) {
 
 				// email testing
 				if(entry.emailPossibilities) {
-					let email;
-					for(let possibility of Object.keys(entry.emailPossibilities)) {
-						if(!entry.emailPossibilities[possibility]) {
-							email = possibility.replace(/_dot_/g, '.');
-							try {
-							   	entry.emailPossibilities[possibility] = await checker.checkEmail(email);
-								await entriesCollection.update(entry);
-								console.log(email + ' : ' + entry.emailPossibilities[possibility]);
-							}
-							catch(e) {
-								return reject(e.message);
-							}
+					const possibilities = Object.keys(entry.emailPossibilities);
+					let result;
+					let alreadyFound = false;
 
-							// if any valid email has been found, we mark other possibilities and we stop to process this address
-							if(entry.emailPossibilities[possibility] === 'VALID') {
-								markOtherEntriesAsSkipped(entry.emailPossibilities);
-								await entriesCollection.update(entry);
-								break;
+					// it already exists winning permutations for this domain name
+					const winningPermutations = await domainsCollection.get(entry.domain);
+					//console.log(winningPermutations);
+					if(winningPermutations) {
+						console.log('Winning permutation(s) have been found for this domain name.');
+						for(let index of winningPermutations.indexes) {
+							if(index < possibilities.length && !entry.emailPossibilities[possibilities[index]]) {
+								result = await checkEmailPossibility(entry, possibilities[index], index, entriesCollection, domainsCollection);
+								if(result.error)
+									return reject(result.error);
+								else if(result.valid) {
+									console.log('Valid mail address found thanks to a prior possibility.')
+									alreadyFound = true;
+									break;
+								}
 							}
 
 							sleep(config.sleepTime); // for avoid stressing API
+						}
+					}
+
+					if(!alreadyFound) {
+						let index = 0;
+						for(let possibility of possibilities) {
+							if(!entry.emailPossibilities[possibility]) {
+								result = await checkEmailPossibility(entry, possibility, index, entriesCollection, domainsCollection);
+								if(result.error)
+									return reject(result.error);
+								else if(result.valid)
+									break;
+
+								sleep(config.sleepTime); // for avoid stressing API
+							}
+							index++;
 						}
 					}
 				}
@@ -187,4 +228,14 @@ function normalizeJSON(json, validOnly) {
 		console.error(error);
 		process.exit(1);
 	});
+}
+
+(async function run() {
+	try {
+		await main()
+	}
+	catch(e) {
+		console.error(e);
+		process.exit(1);
+	}
 })();

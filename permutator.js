@@ -81,6 +81,33 @@ const permutations = [
 	'{fi}.{ln4}'
 ];
 
+function exportPermutation(index, names) {
+	const permutation = permutations[index];
+	const output = {permutation: permutation};
+	const patterns = permutation.match(/[a-z]{2}[0-9]?/g);
+	for(pattern of patterns) {
+		if(pattern == 'fn')
+			output[pattern] = names[0];
+		else if(pattern == 'fi')
+			output[pattern] = names[0][0];
+		else if(pattern == 'ln')
+			output[pattern] = names[names.length - 1];
+		else if(pattern == 'li')
+			output[pattern] = names[names.length - 1][0];
+		else if(pattern == 'mn')
+			output[pattern] = names[1];
+		else if(pattern == 'mi')
+			output[pattern] = names[1][0];
+		else if(pattern.match(/ln[0-9]+/))
+			output[pattern] = names[pattern.match(/[0-9]+/)[0]]
+		else if(pattern.match(/li[0-9]+/))
+			output[pattern] = names[pattern.match(/[0-9]+/)[0]][0]
+		else
+			console.error('Unknown pattern : ' + pattern);
+	}
+	return output;
+}
+
 function replacePatterns(permutation, names) {
 	if(names.length > 0) {
 		permutation = permutation.replace('{fn}', names[0]);
@@ -128,4 +155,4 @@ const generate = function(names, domainName) {
 };
 
 //console.log(generate(readArgs(), 'email.com'));
-module.exports = {generate: generate};
+module.exports = {generate: generate, exportPermutation: exportPermutation};

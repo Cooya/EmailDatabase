@@ -17,12 +17,12 @@ const permutations = [
 	'{li}.{fn}',
 	'{li}{fi}',
 	'{fi}{li}',
-	'{fi}{mi}{ln}',
-	'{fi}{mi}.{ln}',
-	'{fn}{mi}{ln}',
-	'{fn}.{mn}.{ln}',
-	'{fn}{mn}{ln}',
-	'{fn}.{mn}.{ln}',
+	'{fi}{li2}{ln}',
+	'{fi}{li2}.{ln}',
+	'{fn}{li2}{ln}',
+	'{fn}.{ln2}.{ln}',
+	'{fn}{ln2}{ln}',
+	'{fn}.{ln2}.{ln}',
 	'{fn}-{ln}',
 	'{fi}-{ln}',
 	'{fn}-{li}',
@@ -31,9 +31,9 @@ const permutations = [
 	'{ln}-{fi}',
 	'{li}-{fn}',
 	'{li}-{fi}',
-	'{fi}{mi}-{ln}',
-	'{fn}-{mi}-{ln}',
-	'{fn}-{mn}-{ln}',
+	'{fi}{li2}-{ln}',
+	'{fn}-{li2}-{ln}',
+	'{fn}-{ln2}-{ln}',
 	'{fn}_{ln}',
 	'{fi}_{ln}',
 	'{fn}_{li}',
@@ -42,50 +42,50 @@ const permutations = [
 	'{ln}_{fi}',
 	'{li}_{fn}',
 	'{li}_{fi}',
-	'{fi}{mi}_{ln}',
-	'{fn}_{mi}_{ln}',
-	'{fn}_{mn}_{ln}',
-	'{fn}.{ln}{ln2}',
-	'{fn}.{ln}-{ln2}',
-	'{fi}.{ln}-{ln2}',
-	'{fi}.{ln}{ln2}',
-	'{fi}{ln}{ln2}',
-	'{fn}{ln2}',
-	'{fn}.{ln2}',
-	'{fi}{ln2}',
-	'{fi}.{ln2}',
-	'{fn}{li2}',
-	'{fi}{li2}',
-	'{fi}.{li2}',
-	'{fn}.{ln}{ln2}{ln3}',
-	'{fn}.{ln}-{ln2}-{ln3}',
-	'{fi}.{ln}-{ln2}-{ln3}',
-	'{fi}.{ln}{ln2}{ln3}',
+	'{fi}{li2}_{ln}',
+	'{fn}_{li2}_{ln}',
+	'{fn}_{ln2}_{ln}',
+	'{fn}.{ln}{ln3}',
+	'{fn}.{ln}-{ln3}',
+	'{fi}.{ln}-{ln3}',
+	'{fi}.{ln}{ln3}',
+	'{fi}{ln}{ln3}',
 	'{fn}{ln3}',
 	'{fn}.{ln3}',
 	'{fi}{ln3}',
 	'{fi}.{ln3}',
-	'{fn}{ln3}',
-	'{fi}{ln3}',
-	'{fi}.{ln3}',
-	'{fn}.{ln}{ln2}{ln3}{ln4}',
-	'{fn}.{ln}-{ln2}-{ln3}-{ln4}',
-	'{fi}.{ln}-{ln2}-{ln3}-{ln4}',
-	'{fi}.{ln}{ln2}{ln3}{ln4}',
+	'{fn}{li3}',
+	'{fi}{li3}',
+	'{fi}.{li3}',
+	'{fn}.{ln}{ln3}{ln4}',
+	'{fn}.{ln}-{ln3}-{ln4}',
+	'{fi}.{ln}-{ln3}-{ln4}',
+	'{fi}.{ln}{ln3}{ln4}',
 	'{fn}{ln4}',
 	'{fn}.{ln4}',
 	'{fi}{ln4}',
 	'{fi}.{ln4}',
 	'{fn}{ln4}',
 	'{fi}{ln4}',
-	'{fi}.{ln4}'
+	'{fi}.{ln4}',
+	'{fn}.{ln}{ln3}{ln4}{ln5}',
+	'{fn}.{ln}-{ln3}-{ln4}-{ln5}',
+	'{fi}.{ln}-{ln3}-{ln4}-{ln5}',
+	'{fi}.{ln}{ln3}{ln4}{ln5}',
+	'{fn}{ln5}',
+	'{fn}.{ln5}',
+	'{fi}{ln5}',
+	'{fi}.{ln5}',
+	'{fn}{ln5}',
+	'{fi}{ln5}',
+	'{fi}.{ln5}'
 ];
 
 function exportPermutation(index, names) {
 	const permutation = permutations[index];
 	const output = {permutation: permutation};
 	const patterns = permutation.match(/[a-z]{2}[0-9]?/g);
-	for(pattern of patterns) {
+	for(let pattern of patterns) {
 		if(pattern == 'fn')
 			output[pattern] = names[0];
 		else if(pattern == 'fi')
@@ -94,18 +94,29 @@ function exportPermutation(index, names) {
 			output[pattern] = names[names.length - 1];
 		else if(pattern == 'li')
 			output[pattern] = names[names.length - 1][0];
-		else if(pattern == 'mn')
-			output[pattern] = names[1];
-		else if(pattern == 'mi')
-			output[pattern] = names[1][0];
 		else if(pattern.match(/ln[0-9]+/))
-			output[pattern] = names[pattern.match(/[0-9]+/)[0]]
+			output[pattern] = names[pattern.match(/[0-9]+/)[0] - 1]
 		else if(pattern.match(/li[0-9]+/))
-			output[pattern] = names[pattern.match(/[0-9]+/)[0]][0]
+			output[pattern] = names[pattern.match(/[0-9]+/)[0] - 1][0]
 		else
 			console.error('Unknown pattern : ' + pattern);
 	}
 	return output;
+}
+
+function exportNames(names) {
+	const result = {};
+	let key;
+	names.forEach((value, index) => {
+		if(index == 0)
+			key = 'fn';
+		else if(index == names.length - 1)
+			key = 'ln';
+		else
+			key = 'ln' + (index - 1);
+		result[key] = value;
+	});
+	return result;
 }
 
 function replacePatterns(permutation, names) {
@@ -117,13 +128,9 @@ function replacePatterns(permutation, names) {
 		permutation = permutation.replace('{ln}', names[names.length - 1]);
 		permutation = permutation.replace('{li}', names[names.length - 1][0]);
 	}
-	if(names.length > 2) {
-		permutation = permutation.replace('{mn}', names[1]);
-		permutation = permutation.replace('{mi}', names[1][0]);
-	}
-	for(let i = 2; names.length > i + 1; ++i) {
-		permutation = permutation.replace('{ln' + i + '}', names[i]);
-		permutation = permutation.replace('{li' + i + '}', names[i][0]);
+	for(let i = 1; names.length > i + 1; ++i) {
+		permutation = permutation.replace('{ln' + i + '}', names[i - 1]);
+		permutation = permutation.replace('{li' + i + '}', names[i - 1][0]);
 	}
 
 	if(permutation.match(/{[a-z]{2}[0-9]?}/))
@@ -155,4 +162,4 @@ const generate = function(names, domainName) {
 };
 
 //console.log(generate(readArgs(), 'email.com'));
-module.exports = {generate: generate, exportPermutation: exportPermutation};
+module.exports = {generate: generate, exportPermutation: exportPermutation, exportNames: exportNames};

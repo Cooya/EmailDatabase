@@ -49,18 +49,27 @@ function markOtherEntriesAsSkipped(obj) {
 
 function normalizeJSON(json, validOnly) {
 	let tmp;
+	let emailValue;
+	let emailKeys;
+
 	for(let entry of json) {
 		tmp = Object.assign({}, entry['emailPossibilities']);
+		entry['namesDetails'] = permutator.exportNames(entry['names']);
 		entry['emailPossibilities'] = {};
-		Object.keys(tmp).forEach((email, index) => {
-			if(!validOnly || (validOnly && tmp[email] == 'VALID')) {
+		emailKeys = Object.keys(tmp);
+		emailKeys.forEach((emailKey, index) => {
+			if(!validOnly || (validOnly && tmp[emailKey] == 'VALID')) {
 				delete entry['_id'];
-				entry['emailPossibilities'][email.replace(/_dot_/g, '.')] = {
-					result: tmp[email],
+				emailValue = emailKey.replace(/_dot_/g, '.');
+				entry['emailPossibilities'][emailValue] = {
+					status: tmp[emailKey],
 					patterns: permutator.exportPermutation(index, entry.names) 
 				};
+
+				if(tmp[emailKey] == 'VALID')
+					entry['emailFormat'] = entry['emailPossibilities'][emailValue]['patterns']['permutation'];
 			}
-		})
+		});
 	}
 
 	return json;
@@ -68,17 +77,19 @@ function normalizeJSON(json, validOnly) {
 
 async function checkEmailPossibility(entry, possibility, possibilityIndex, entriesCollection, domainsCollection) {
 	const email = possibility.replace(/_dot_/g, '.');
+	let status;
 	try {
-		entry.emailPossibilities[possibility] = await checker.checkEmail(email);
-		await entriesCollection.update(entry);
-		console.log(email + ' : ' + entry.emailPossibilities[possibility]);
+		status = await checker.checkEmail(email);
 	}
 	catch(e) {
 		return {error: e.message};
 	}
+
+	entry.emailPossibilities[possibility] = entry['status'] = status;
+	console.log(email + ' : ' + status);
 		
 	// if any valid email has been found, we mark other possibilities and we stop to process this address
-	if(entry.emailPossibilities[possibility] === 'VALID') {
+	if(status === 'VALID') {
 		markOtherEntriesAsSkipped(entry.emailPossibilities);
 		const domainEntry = await domainsCollection.get(entry.domain);
 		if(domainEntry) {
@@ -93,10 +104,9 @@ async function checkEmailPossibility(entry, possibility, possibilityIndex, entri
 				indexes: [possibilityIndex]
 			});
 		}
-		await entriesCollection.update(entry);
-		return {valid: true};
 	}
-	return {};
+	await entriesCollection.update(entry);
+	return {valid: status === 'VALID'};
 }
 
 async function main() {
@@ -127,6 +137,7 @@ async function main() {
 				id: entry['ID'],
 				name: entry['Name'],
 				domain: entry['Website Domain'],
+				status: 'UNPROCESSED',
 				processed: false
 			};
 			//console.log(entry);

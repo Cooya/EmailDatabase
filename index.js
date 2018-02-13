@@ -2,7 +2,6 @@ const fs = require('fs');
 
 const PromisePool = require('es6-promise-pool');
 const sleep = require('system-sleep');
-const stringify = require('csv-stringify');
 const xlsx2json = require('xlsx-to-json');
 
 const cleaner = require('./cleaner.js');
@@ -78,6 +77,26 @@ function normalizeJSON(json, validOnly) {
 	return json;
 }
 
+function normalizeCSV(json) {
+	if(!json.length)
+		return '';
+
+	let csv = '';
+	let first = true;
+    for(let entry of json) {
+    	entry['name'] = entry['name'].replace(/,/g, '');
+       	entry = Object.assign(entry, permutator.exportNames(entry['names'], true));
+       	delete entry['names'];
+        delete entry['emailPossibilities'];
+        if(first) {
+            csv += Object.keys(entry).join(',') + '\n';
+            first = false;
+        }
+        csv += Object.values(entry).join(',') + '\n';
+    }
+    return csv;
+}
+
 async function checkEmailPossibility(entry, possibility, possibilityIndex, entriesCollection, domainsCollection) {
 	const email = possibility.replace(/_dot_/g, '.');
 	let status;
@@ -88,11 +107,13 @@ async function checkEmailPossibility(entry, possibility, possibilityIndex, entri
 		return {error: e.message};
 	}
 
-	entry.emailPossibilities[possibility] = entry['status'] = status;
+	entry.emailPossibilities[possibility] = entry['emailStatus'] = status;
 	console.log(email + ' : ' + status);
 		
 	// if any valid email has been found, we mark other possibilities and we stop to process this address
 	if(status === 'VALID') {
+		entry['emailFormat'] = permutator.getPattern(possibilityIndex);
+		entry['emailValid'] = email;
 		markOtherEntriesAsSkipped(entry.emailPossibilities);
 		const domainEntry = await domainsCollection.get(entry.domain);
 		if(domainEntry) {
@@ -128,21 +149,15 @@ async function main() {
 		console.log('JSON export mode enabled.');
 		const json = normalizeJSON(await entriesCollection.all(), config.validOnly);
 		fs.writeFileSync(config.exportJSON, JSON.stringify(json, null, 4));
-		console.log('The collection has been exported into the file "' + config.exportFile + '".');
+		console.log('The collection has been exported into the file "' + config.exportJSON + '".');
 		process.exit(0);
 	}
 	else if(config.exportCSV) {
         console.log('CSV export mode enabled.');
-        const json = normalizeJSON(await entriesCollection.all(), config.validOnly);
-        stringify(json, (err, output) => {
-        	if(err)
-        		return console.error(err);
-
-            fs.writeFileSync(config.exportCSV, output);
-            console.log('The collection has been exported into the file "' + config.exportCSV + '".');
-            process.exit(0);
-		});
-        return;
+        const csv = normalizeCSV(await entriesCollection.all(), config.validOnly);
+        fs.writeFileSync(config.exportCSV, csv);
+        console.log('The collection has been exported into the file "' + config.exportCSV + '".');
+        process.exit(0);
 	}
 
 	if(config.xlsxFile) {
@@ -150,11 +165,24 @@ async function main() {
 		const entries = await readEntriesFromXLSXFile(config.xlsxFile);
 		for(let entry of entries) {
 			entry = {
-				id: entry['ID'] || entry['id'] || entry['Id'],
-				name: entry['Name'] || entry['name'],
+                name: entry['Name'] || entry['name'],
+				job: entry['job'],
+                location: entry['location'],
+                company: entry['company'],
+                companyUrl: entry['companyUrl'],
 				domain: entry['Website Domain'] || entry['domain'] || entry['Domain'],
-				status: 'UNPROCESSED',
-				processed: false
+                id: entry['ID'] || entry['id'] || entry['Id'],
+				url: entry['url'],
+				processed: false,
+				firstName: null,
+				lastName1: null,
+				lastName2: null,
+				lastName3: null,
+				lastName4: null,
+				lastName5: null,
+				emailStatus: null,
+				emailFormat: null,
+				emailValid: null
 			};
 			//console.log(entry);
             if(!entry['id'] || !entry['name'] || !entry['domain'])
@@ -193,7 +221,11 @@ async function main() {
 				}
 
 				// email generating
-				if(!entry.emailPossibilities && entry.domain !== '#N/A') {
+                if(entry.domain === '#N/A') {
+					entry['emailStatus'] = 'BAD DOMAIN NAME';
+                    await entriesCollection.update(entry);
+				}
+				else if(!entry.emailPossibilities) {
 					entry.emailPossibilities = {};
 					permutator.generate(entry.names, entry.domain).forEach((possibility) => {
 						entry.emailPossibilities[possibility.replace(/\./g, '_dot_')] = null;

@@ -81,39 +81,43 @@ const permutations = [
 	'{fi}.{ln5}'
 ];
 
+function getPattern(index) {
+	return permutations[index];
+}
+
 function exportPermutation(index, names) {
 	const permutation = permutations[index];
 	const output = {permutation: permutation};
 	const patterns = permutation.match(/[a-z]{2}[0-9]?/g);
 	for(let pattern of patterns) {
-		if(pattern == 'fn')
+		if(pattern === 'fn')
 			output[pattern] = names[0];
-		else if(pattern == 'fi')
+		else if(pattern === 'fi')
 			output[pattern] = names[0][0];
-		else if(pattern == 'ln')
+		else if(pattern === 'ln')
 			output[pattern] = names[names.length - 1];
-		else if(pattern == 'li')
+		else if(pattern === 'li')
 			output[pattern] = names[names.length - 1][0];
 		else if(pattern.match(/ln[0-9]+/))
-			output[pattern] = names[pattern.match(/[0-9]+/)[0] - 1]
+			output[pattern] = names[pattern.match(/[0-9]+/)[0] - 1];
 		else if(pattern.match(/li[0-9]+/))
-			output[pattern] = names[pattern.match(/[0-9]+/)[0] - 1][0]
+			output[pattern] = names[pattern.match(/[0-9]+/)[0] - 1][0];
 		else
 			console.error('Unknown pattern : ' + pattern);
 	}
 	return output;
 }
 
-function exportNames(names) {
+function exportNames(names, completeWords = false) {
 	const result = {};
 	let key;
 	names.forEach((value, index) => {
-		if(index == 0)
-			key = 'fn';
-		else if(index == names.length - 1)
-			key = 'ln';
+		if(index === 0)
+			key = completeWords ? 'firstName' : 'fn';
+		else if(index === names.length - 1)
+			key = completeWords ? 'lastName1' : 'ln';
 		else
-			key = 'ln' + (index - 1);
+			key = (completeWords ? 'lastName' : 'ln') + (index + 1);
 		result[key] = value;
 	});
 	return result;
@@ -162,4 +166,4 @@ const generate = function(names, domainName) {
 };
 
 //console.log(generate(readArgs(), 'email.com'));
-module.exports = {generate: generate, exportPermutation: exportPermutation, exportNames: exportNames};
+module.exports = {generate: generate, exportPermutation: exportPermutation, exportNames: exportNames, getPattern: getPattern};

@@ -5,6 +5,7 @@
   "main": "index.js",
   "dependencies": {
     "cheerio": "^1.0.0-rc.2",
+    "csv-stringify": "^2.0.2",
     "es6-promise-pool": "^2.5.0",
     "mongodb": "2.2.34",
     "neverbounce": "3.0.0",

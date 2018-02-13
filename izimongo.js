@@ -77,6 +77,19 @@ module.exports = class IziMongo {
 		});
 	}
 
+	delete(id) {
+		return this.collection.deleteOne({id: id})
+			.then((result) => {
+				if(result.deletedCount === 1) {
+                    delete this.container[id];
+                    //console.log('Entry has been deleted from database.');
+                    return true;
+                }
+                else
+                	return Promise.reject('This object id does not exist into this collection.');
+			});
+	}
+
 	empty() {
 		return this.collection.drop()
 		.then(() => {

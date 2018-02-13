@@ -2,6 +2,7 @@ const fs = require('fs');
 
 const PromisePool = require('es6-promise-pool');
 const sleep = require('system-sleep');
+const stringify = require('csv-stringify');
 const xlsx2json = require('xlsx-to-json');
 
 const cleaner = require('./cleaner.js');
@@ -15,8 +16,10 @@ function setConfig() {
 	for(let i = 2; i < process.argv.length; ++i) {
 		if(process.argv[i] === '--xlsx-file')
 			config['xlsxFile'] = process.argv[i + 1];
-		else if(process.argv[i] === '--export-file')
-			config['exportFile'] = process.argv[i + 1];
+		else if(process.argv[i] === '--export-json')
+			config['exportJSON'] = process.argv[i + 1];
+		else if(process.argv[i] === '--export-csv')
+			config['exportCSV'] = process.argv[i + 1];
 		else if(process.argv[i] === '--threads')
 			config['nbThreads'] = process.argv[i + 1];
 		else if(process.argv[i] === '--reset')
@@ -58,7 +61,7 @@ function normalizeJSON(json, validOnly) {
 		entry['emailPossibilities'] = {};
 		emailKeys = Object.keys(tmp);
 		emailKeys.forEach((emailKey, index) => {
-			if(!validOnly || (validOnly && tmp[emailKey] == 'VALID')) {
+			if(!validOnly || (validOnly && tmp[emailKey] === 'VALID')) {
 				delete entry['_id'];
 				emailValue = emailKey.replace(/_dot_/g, '.');
 				entry['emailPossibilities'][emailValue] = {
@@ -66,7 +69,7 @@ function normalizeJSON(json, validOnly) {
 					patterns: permutator.exportPermutation(index, entry.names) 
 				};
 
-				if(tmp[emailKey] == 'VALID')
+				if(tmp[emailKey] === 'VALID')
 					entry['emailFormat'] = entry['emailPossibilities'][emailValue]['patterns']['permutation'];
 			}
 		});
@@ -93,7 +96,7 @@ async function checkEmailPossibility(entry, possibility, possibilityIndex, entri
 		markOtherEntriesAsSkipped(entry.emailPossibilities);
 		const domainEntry = await domainsCollection.get(entry.domain);
 		if(domainEntry) {
-			if(domainEntry.indexes.indexOf(possibilityIndex) == -1) {
+			if(domainEntry.indexes.indexOf(possibilityIndex) === -1) {
 				domainEntry.indexes.push(possibilityIndex);
 				await domainsCollection.update(domainEntry);
 			}
@@ -121,27 +124,43 @@ async function main() {
 		await entriesCollection.empty();
 		process.exit(0);
 	}
-	else if(config.exportFile) {
-		console.log('Export mode enabled.');
+	else if(config.exportJSON) {
+		console.log('JSON export mode enabled.');
 		const json = normalizeJSON(await entriesCollection.all(), config.validOnly);
-		fs.writeFileSync(config.exportFile, JSON.stringify(json, null, 4));
+		fs.writeFileSync(config.exportJSON, JSON.stringify(json, null, 4));
 		console.log('The collection has been exported into the file "' + config.exportFile + '".');
 		process.exit(0);
 	}
+	else if(config.exportCSV) {
+        console.log('CSV export mode enabled.');
+        const json = normalizeJSON(await entriesCollection.all(), config.validOnly);
+        stringify(json, (err, output) => {
+        	if(err)
+        		return console.error(err);
+
+            fs.writeFileSync(config.exportCSV, output);
+            console.log('The collection has been exported into the file "' + config.exportCSV + '".');
+            process.exit(0);
+		});
+        return;
+	}
 
 	if(config.xlsxFile) {
-		console.log('Input file in configuration, reading...');
+		console.log('Input file provided, reading...');
 		const entries = await readEntriesFromXLSXFile(config.xlsxFile);
 		for(let entry of entries) {
 			entry = {
-				id: entry['ID'],
-				name: entry['Name'],
-				domain: entry['Website Domain'],
+				id: entry['ID'] || entry['id'] || entry['Id'],
+				name: entry['Name'] || entry['name'],
+				domain: entry['Website Domain'] || entry['domain'] || entry['Domain'],
 				status: 'UNPROCESSED',
 				processed: false
 			};
 			//console.log(entry);
-			await entriesCollection.insert(entry);
+            if(!entry['id'] || !entry['name'] || !entry['domain'])
+            	console.error('Invalid entry found into the provided file, skipped.');
+            else
+				await entriesCollection.insert(entry);
 		}
 		console.log('Entries from file have been written into database.');
 	}
@@ -158,6 +177,12 @@ async function main() {
 		if(i < unprocessedEntries.length)
 			return new Promise(async (resolve, reject) => {
 				const entry = unprocessedEntries[i++];
+				if(!entry['id'] || !entry['name'] || !entry['domain']) {
+					console.log('Invalid entry found in database, removing...');
+                    await entriesCollection.delete(entry['id']);
+                    return resolve();
+				}
+
 				console.log('Processing entry "' + entry.id + '"...');
 
 				// name cleaning
@@ -194,7 +219,7 @@ async function main() {
 								if(result.error)
 									return reject(result.error);
 								else if(result.valid) {
-									console.log('Valid mail address found thanks to a prior possibility.')
+									console.log('Valid mail address found thanks to a prior possibility.');
 									alreadyFound = true;
 									break;
 								}

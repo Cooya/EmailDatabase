@@ -31,12 +31,17 @@ node index.js --xlsx-file misc/input.xlsx
 
 Export the database to a JSON file :
 ```bash
-node index.js --export-file output.json
+node index.js --export-json output.json
+```
+
+Export the database to a CSV file :
+```bash
+node index.js --export-csv output.csv
 ```
 
 Export the database to a JSON file with valid emails only :
 ```bash
-node index.js --export-file output.json --valid-only
+node index.js --export-json output.json --valid-only
 ```
 
 Empty the email addresses collection :

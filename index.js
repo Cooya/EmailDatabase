@@ -77,23 +77,38 @@ function normalizeJSON(json, validOnly) {
 	return json;
 }
 
+function normalizeCSVEntry(entry) {
+    return {
+        name: entry['name'],
+        job: entry['job'],
+        location: entry['location'],
+        company: entry['company'],
+        companyUrl: entry['companyUrl'],
+        domain: entry['domain'],
+        id: entry['id'],
+        url: entry['url'],
+        processed: entry['processed'],
+        firstName: entry['firstName'],
+        lastName1: entry['lastName1'],
+        lastName2: entry['lastName2'],
+        lastName3: entry['lastName3'],
+        lastName4: entry['lastName4'],
+        lastName5: entry['lastName5'],
+        emailStatus: entry['emailStatus'],
+        emailFormat: entry['emailFormat'],
+        emailValid: entry['emailValid']
+	};
+}
+
 function normalizeCSV(json) {
 	if(!json.length)
 		return '';
 
-	let csv = '';
-	let values;
-	let first = true;
+	let csv = Object.keys(normalizeCSVEntry({})).join(';') + '\n';
     for(let entry of json) {
-       	entry = Object.assign(entry, permutator.exportNames(entry['names'], true));
-       	delete entry['names'];
-        delete entry['emailPossibilities'];
-        if(first) {
-            csv += Object.keys(entry).join(';') + '\n';
-            first = false;
-        }
+       	entry = normalizeCSVEntry(Object.assign(entry, permutator.exportNames(entry['names'], true)));
 
-        values = Object.values(entry);
+        let values = Object.values(entry);
         for(let index in values)
             if(values[index])
             	values[index] = String(values[index]).replace(/,/g, '');

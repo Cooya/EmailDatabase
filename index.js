@@ -82,17 +82,22 @@ function normalizeCSV(json) {
 		return '';
 
 	let csv = '';
+	let values;
 	let first = true;
     for(let entry of json) {
-    	entry['name'] = entry['name'].replace(/,/g, '');
        	entry = Object.assign(entry, permutator.exportNames(entry['names'], true));
        	delete entry['names'];
         delete entry['emailPossibilities'];
         if(first) {
-            csv += Object.keys(entry).join(',') + '\n';
+            csv += Object.keys(entry).join(';') + '\n';
             first = false;
         }
-        csv += Object.values(entry).join(',') + '\n';
+
+        values = Object.values(entry);
+        for(let index in values)
+            if(values[index])
+            	values[index] = String(values[index]).replace(/,/g, '');
+        csv += values.join(';') + '\n';
     }
     return csv;
 }

@@ -77,8 +77,8 @@ function normalizeJSON(json, validOnly) {
 	return json;
 }
 
-function normalizeCSVEntry(entry) {
-	if(!entry['emailStatus']) {
+async function normalizeCSVEntry(entry, entriesCollection) {
+	if(Object.keys(entry).length && !entry['emailStatus']) {
 		let lastStatus;
         for(let possibility in entry['emailPossibilities']) {
         	lastStatus = entry['emailPossibilities']['status'];
@@ -89,6 +89,7 @@ function normalizeCSVEntry(entry) {
             }
         }
         entry['emailStatus'] = lastStatus;
+        await entriesCollection.update(entry)
     }
 
     return {
@@ -113,13 +114,14 @@ function normalizeCSVEntry(entry) {
 	};
 }
 
-function normalizeCSV(json) {
+async function normalizeCSV(json, entriesCollection) {
 	if(!json.length)
 		return '';
 
-	let csv = Object.keys(normalizeCSVEntry({})).join(';') + '\n';
+	let csv = Object.keys(await normalizeCSVEntry({})).join(';') + '\n';
     for(let entry of json) {
-       	entry = normalizeCSVEntry(Object.assign(entry, permutator.exportNames(entry['names'], true)));
+       	entry = await normalizeCSVEntry(Object.assign(entry, permutator.exportNames(entry['names'], true)), entriesCollection);
+       	console.log(entry);
 
         let values = Object.values(entry);
         for(let index in values)
@@ -187,7 +189,7 @@ async function main() {
 	}
 	else if(config.exportCSV) {
         console.log('CSV export mode enabled.');
-        const csv = normalizeCSV(await entriesCollection.all(), config.validOnly);
+        const csv = await normalizeCSV(await entriesCollection.all(), entriesCollection);
         fs.writeFileSync(config.exportCSV, csv);
         console.log('The collection has been exported into the file "' + config.exportCSV + '".');
         process.exit(0);

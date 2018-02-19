@@ -78,6 +78,19 @@ function normalizeJSON(json, validOnly) {
 }
 
 function normalizeCSVEntry(entry) {
+	if(!entry['emailStatus']) {
+		let lastStatus;
+        for(let possibility in entry['emailPossibilities']) {
+        	lastStatus = entry['emailPossibilities']['status'];
+            if(lastStatus === 'VALID') {
+                entry['emailFormat'] = permutator.getPattern(possibility);
+                entry['emailValid'] = possibility;
+                break;
+            }
+        }
+        entry['emailStatus'] = lastStatus;
+    }
+
     return {
         name: entry['name'],
         job: entry['job'],

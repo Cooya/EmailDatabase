@@ -55,6 +55,9 @@ function normalizeJSON(json, validOnly) {
 	let emailKeys;
 
 	for(let entry of json) {
+		if(!entry['processed'])
+			continue;
+
 		tmp = Object.assign({}, entry['emailPossibilities']);
 		entry['namesDetails'] = permutator.exportNames(entry['names']);
 		entry['emailPossibilities'] = {};
@@ -120,6 +123,9 @@ async function normalizeCSV(json, entriesCollection) {
 
 	let csv = Object.keys(await normalizeCSVEntry({})).join(';') + '\n';
     for(let entry of json) {
+		if(!entry['processed'])
+			continue;
+
        	entry = await normalizeCSVEntry(Object.assign(entry, permutator.exportNames(entry['names'], true)), entriesCollection);
        	console.log(entry);
 
@@ -241,7 +247,7 @@ async function main() {
 			return new Promise(async (resolve, reject) => {
 				const entry = unprocessedEntries[i++];
 				if(!entry['id'] || !entry['name'] || !entry['domain']) {
-					console.log('Invalid entry found in database, removing...');
+					console.log('Invalid entry found in database, removing entry...');
                     await entriesCollection.delete(entry['id']);
                     return resolve();
 				}
@@ -251,6 +257,12 @@ async function main() {
 				// name cleaning
 				if(!entry.names) {
 					entry.names = cleaner.cleanName(entry.name);
+					if(!entry.names || entry.names[0] == '') {
+						console.log('Invalid names array returned by the cleaner, removing entry...');
+						await entriesCollection.delete(entry['id']);
+						return resolve();
+					}
+
 					await entriesCollection.update(entry);
 					//console.log('Name "' + entry.name + '" cleaned.');
 				}

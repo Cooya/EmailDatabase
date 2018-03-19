@@ -255,9 +255,9 @@ async function main() {
 				console.log('Processing entry "' + entry.id + '"...');
 
 				// name cleaning
-				if(!entry.names) {
+				if(!entry.names || !Array.isArray(entry.names)) {
 					entry.names = cleaner.cleanName(entry.name);
-					if(!entry.names || entry.names[0] == '') {
+					if(!entry.names || !Array.isArray(entry.names) || entry.names[0] == '') {
 						console.log('Invalid names array returned by the cleaner, removing entry...');
 						await entriesCollection.delete(entry['id']);
 						return resolve();
